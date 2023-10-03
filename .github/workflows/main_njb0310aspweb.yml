@@ -16,42 +16,57 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup MSBuild path
-        uses: microsoft/setup-msbuild@v1.0.2
-
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1.0.5
-
-      - name: Restore NuGet packages
-        run: nuget restore
-
-      - name: Publish to folder
-        run: msbuild /nologo /verbosity:m /t:Build /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir="\published\"
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v2
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
         with:
-          name: ASP-app
-          path: '/published/**'
+          dotnet-version: '7.0.x' # Replace with the desired .NET Core version
 
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v2
-        with:
-          name: ASP-app
+      - name: Build and publish
+        run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'njb0310aspweb'
-          slot-name: 'Production'
+          app-name: njb0310aspweb
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7E9FB756C9A0458793D09E14EF7849A7 }}
-          package: .
+          package: ${{env.DOTNET_ROOT}}/myapp
+
+  #     - name: Setup MSBuild path
+  #       uses: microsoft/setup-msbuild@v1.0.2
+
+  #     - name: Setup NuGet
+  #       uses: NuGet/setup-nuget@v1.0.5
+
+  #     - name: Restore NuGet packages
+  #       run: nuget restore
+
+  #     - name: Publish to folder
+  #       run: msbuild /nologo /verbosity:m /t:Build /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir="\published\"
+
+  #     - name: Upload artifact for deployment job
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: ASP-app
+  #         path: '/published/**'
+
+  # deploy:
+  #   runs-on: windows-latest
+  #   needs: build
+  #   environment:
+  #     name: 'Production'
+  #     url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+  #   steps:
+  #     - name: Download artifact from build job
+  #       uses: actions/download-artifact@v2
+  #       with:
+  #         name: ASP-app
+
+  #     - name: Deploy to Azure Web App
+  #       id: deploy-to-webapp
+  #       uses: azure/webapps-deploy@v2
+  #       with:
+  #         app-name: 'njb0310aspweb'
+  #         slot-name: 'Production'
+  #         publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_7E9FB756C9A0458793D09E14EF7849A7 }}
+  #         package: .
